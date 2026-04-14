@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0e1a">
+<title>NightOwl — Enregistreur de Sommeil</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0e1a;
+    --bg-surface: #111827;
+    --bg-card: #1a2235;
+    --bg-card-hover: #1f2a40;
+    --accent: #6ee7b7;
+    --accent-dim: #34d399;
+    --accent-glow: rgba(110, 231, 183, 0.15);
+    --accent-glow-strong: rgba(110, 231, 183, 0.3);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --danger: #f87171;
+    --danger-glow: rgba(248, 113, 113, 0.2);
+    --warning: #fbbf24;
+    --border: rgba(148, 163, 184, 0.08);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Subtle grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 20px 100px;
+    position: relative;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    padding: 50px 0 20px;
+    text-align: center;
+    position: relative;
+  }
+
+  .header .moon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--accent), #059669);
+    margin: 0 auto 16px;
+    box-shadow: 0 0 40px var(--accent-glow-strong), 0 0 80px var(--accent-glow);
+    animation: moonPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes moonPulse {
+    0%, 100% { box-shadow: 0 0 40px var(--accent-glow-strong), 0 0 80px var(--accent-glow); }
+    50% { box-shadow: 0 0 50px var(--accent-glow-strong), 0 0 100px var(--accent-glow); }
+  }
+
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+  }
+
+  .header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  /* ─── Status Bar ─── */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: all 0.3s;
+  }
+
+  .status-dot.listening {
+    background: var(--warning);
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  .status-dot.recording {
+    background: var(--danger);
+    box-shadow: 0 0 12px var(--danger-glow);
+    animation: blink 0.8s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ─── Level Meter ─── */
+  .meter-section {
+    margin: 16px 0 24px;
+  }
+
+  .meter-container {
+    background: var(--bg-surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .meter-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .meter-label span {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+  }
+
+  .meter-label .db-value {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .meter-bar-track {
+    height: 6px;
+    background: var(--bg-deep);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .meter-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    transition: width 0.08s linear;
+    position: relative;
+  }
+
+  .meter-bar-fill.hot {
+    background: linear-gradient(90deg, var(--warning), var(--danger));
+  }
+
+  /* Threshold marker */
+  .threshold-marker {
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    opacity: 0.7;
+    z-index: 2;
+    transition: left 0.2s;
+  }
+
+  .threshold-marker::after {
+    content: '▼';
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: var(--accent);
+  }
+
+  /* ─── Sensitivity Slider ─── */
+  .sensitivity-section {
+    margin-top: 16px;
+  }
+
+  .sensitivity-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .sensitivity-label span {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--bg-deep);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: transform 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(1.2);
+  }
+
+  /* ─── Controls ─── */
+  .controls {
+    display: flex;
+    justify-content: center;
+    margin: 28px 0;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .btn-main {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+    position: relative;
+  }
+
+  .btn-main:hover {
+    background: var(--accent-glow);
+  }
+
+  .btn-main .icon-play {
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 12px 22px;
+    border-color: transparent transparent transparent var(--accent);
+    margin-left: 4px;
+    transition: all 0.2s;
+  }
+
+  .btn-main.active {
+    border-color: var(--danger);
+    background: var(--danger-glow);
+    animation: pulseRec 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseRec {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.3); }
+    50% { box-shadow: 0 0 0 12px rgba(248, 113, 113, 0); }
+  }
+
+  .btn-main.active .icon-play {
+    border-width: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: var(--danger);
+    margin-left: 0;
+  }
+
+  /* ─── Session Info ─── */
+  .session-info {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .session-timer {
+    font-size: 36px;
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+  }
+
+  .session-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ─── Clips Section ─── */
+  .clips-section {
+    margin-top: 8px;
+  }
+
+  .clips-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding: 0 2px;
+  }
+
+  .clips-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+  }
+
+  .clips-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .clips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .clip-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    cursor: pointer;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .clip-card:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(110, 231, 183, 0.15);
+  }
+
+  .clip-card.playing {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .clip-play-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    background: var(--accent-glow);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .clip-play-btn:hover {
+    background: var(--accent-glow-strong);
+  }
+
+  .clip-play-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--accent);
+  }
+
+  .clip-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .clip-time {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .clip-duration {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .clip-waveform {
+    flex: 1;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 1.5px;
+  }
+
+  .clip-waveform .bar {
+    width: 2.5px;
+    border-radius: 1.5px;
+    background: var(--accent-dim);
+    opacity: 0.4;
+    transition: opacity 0.2s;
+  }
+
+  .clip-card.playing .clip-waveform .bar {
+    opacity: 0.8;
+    animation: waveAnim 0.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes waveAnim {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+
+  .clip-download {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .clip-download:hover {
+    background: var(--bg-surface);
+    border-color: var(--text-muted);
+  }
+
+  .clip-download svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ─── Empty State ─── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .owl-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ─── Download All ─── */
+  .download-all {
+    margin-top: 16px;
+    width: 100%;
+    padding: 14px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .download-all:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-color: var(--accent-dim);
+  }
+
+  .download-all svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ─── Hidden ─── */
+  .hidden { display: none !important; }
+
+  /* ─── Wakelock info ─── */
+  .wakelock-info {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+
+  /* ─── Stars background ─── */
+  .stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    animation: twinkle var(--dur) ease-in-out infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.6; }
+  }
+
+  .app { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="app">
+  <header class="header">
+    <div class="moon"></div>
+    <h1>NightOwl</h1>
+    <p>Enregistreur de sommeil intelligent</p>
+  </header>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">En attente</span>
+  </div>
+
+  <div class="meter-section">
+    <div class="meter-container">
+      <div class="meter-label">
+        <span>Niveau sonore</span>
+        <span class="db-value" id="dbValue">— dB</span>
+      </div>
+      <div class="meter-bar-track">
+        <div class="meter-bar-fill" id="meterFill"></div>
+        <div class="threshold-marker" id="thresholdMarker"></div>
+      </div>
+      <div class="sensitivity-section">
+        <div class="sensitivity-label">
+          <span>Sensibilité (seuil)</span>
+          <span id="thresholdValue">15%</span>
+        </div>
+        <input type="range" id="thresholdSlider" min="3" max="50" value="15">
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-main" id="btnMain" title="Démarrer / Arrêter">
+      <div class="icon-play"></div>
+    </button>
+  </div>
+
+  <div class="session-info hidden" id="sessionInfo">
+    <div class="session-timer" id="sessionTimer">00:00:00</div>
+    <div class="session-meta" id="sessionMeta">Session en cours</div>
+  </div>
+
+  <div class="clips-section">
+    <div class="clips-header">
+      <h2>Clips enregistrés</h2>
+      <span class="clips-count" id="clipsCount">0 clip</span>
+    </div>
+    <div class="clips-list" id="clipsList">
+      <div class="empty-state" id="emptyState">
+        <div class="owl-icon">🦉</div>
+        <p>Lance l'enregistrement avant de dormir.<br>Les bruits seront capturés automatiquement.</p>
+      </div>
+    </div>
+    <button class="download-all hidden" id="downloadAll">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Tout télécharger
+    </button>
+  </div>
+
+  <div class="wakelock-info" id="wakelockInfo"></div>
+</div>
+
+<script>
+(function() {
+  // ─── State ───
+  let isListening = false;
+  let audioCtx = null;
+  let analyser = null;
+  let micStream = null;
+  let mediaRecorder = null;
+  let isRecordingClip = false;
+  let recordingChunks = [];
+  let clips = [];
+  let sessionStart = null;
+  let sessionTimerInterval = null;
+  let currentlyPlaying = null;
+  let silenceTimeout = null;
+  let wakeLock = null;
+  let clipStartTime = null;
+
+  // Silence grace period (ms) — keeps recording briefly after sound stops
+  const SILENCE_GRACE = 1500;
+  // Minimum clip duration (ms)
+  const MIN_CLIP_DURATION = 800;
+
+  // ─── DOM ───
+  const btnMain = document.getElementById('btnMain');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  const meterFill = document.getElementById('meterFill');
+  const thresholdMarker = document.getElementById('thresholdMarker');
+  const dbValue = document.getElementById('dbValue');
+  const thresholdSlider = document.getElementById('thresholdSlider');
+  const thresholdValueEl = document.getElementById('thresholdValue');
+  const sessionInfo = document.getElementById('sessionInfo');
+  const sessionTimer = document.getElementById('sessionTimer');
+  const sessionMeta = document.getElementById('sessionMeta');
+  const clipsList = document.getElementById('clipsList');
+  const clipsCount = document.getElementById('clipsCount');
+  const emptyState = document.getElementById('emptyState');
+  const downloadAll = document.getElementById('downloadAll');
+  const wakelockInfo = document.getElementById('wakelockInfo');
+
+  // ─── Stars ───
+  const starsContainer = document.getElementById('stars');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.setProperty('--dur', (2 + Math.random() * 4) + 's');
+    s.style.animationDelay = Math.random() * 4 + 's';
+    s.style.width = s.style.height = (1 + Math.random() * 2) + 'px';
+    starsContainer.appendChild(s);
+  }
+
+  // ─── Threshold slider ───
+  thresholdSlider.addEventListener('input', () => {
+    thresholdValueEl.textContent = thresholdSlider.value + '%';
+    thresholdMarker.style.left = thresholdSlider.value + '%';
+  });
+  thresholdMarker.style.left = thresholdSlider.value + '%';
+
+  // ─── Main button ───
+  btnMain.addEventListener('click', () => {
+    if (isListening) stopListening();
+    else startListening();
+  });
+
+  // ─── Start ───
+  async function startListening() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      });
+    } catch(e) {
+      alert("Impossible d'accéder au micro. Vérifie les permissions.");
+      return;
+    }
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.3;
+    source.connect(analyser);
+
+    isListening = true;
+    sessionStart = Date.now();
+    btnMain.classList.add('active');
+    statusDot.className = 'status-dot listening';
+    statusText.textContent = 'Écoute en cours…';
+    sessionInfo.classList.remove('hidden');
+
+    sessionTimerInterval = setInterval(updateSessionTimer, 1000);
+    updateSessionTimer();
+    monitorLevel();
+    requestWakeLock();
+  }
+
+  // ─── Stop ───
+  function stopListening() {
+    isListening = false;
+
+    if (isRecordingClip) stopRecordingClip(true);
+    if (silenceTimeout) { clearTimeout(silenceTimeout); silenceTimeout = null; }
+
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    if (sessionTimerInterval) { clearInterval(sessionTimerInterval); sessionTimerInterval = null; }
+
+    btnMain.classList.remove('active');
+    statusDot.className = 'status-dot';
+    statusText.textContent = 'Terminé';
+    meterFill.style.width = '0%';
+    dbValue.textContent = '— dB';
+
+    const duration = Date.now() - sessionStart;
+    sessionMeta.textContent = `Session terminée — ${clips.length} clip${clips.length !== 1 ? 's' : ''} capturé${clips.length !== 1 ? 's' : ''}`;
+
+    releaseWakeLock();
+  }
+
+  // ─── Monitor audio level ───
+  function monitorLevel() {
+    if (!isListening || !analyser) return;
+
+    const data = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+
+    // RMS calculation
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = (data[i] - 128) / 128;
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / data.length);
+    const level = Math.min(100, rms * 300); // scale to 0-100
+    const db = rms > 0 ? Math.max(-60, 20 * Math.log10(rms)) : -60;
+
+    const threshold = parseInt(thresholdSlider.value);
+
+    // Update meter
+    meterFill.style.width = level + '%';
+    meterFill.className = 'meter-bar-fill' + (level > 70 ? ' hot' : '');
+    dbValue.textContent = (db > -60 ? db.toFixed(0) : '—') + ' dB';
+
+    // Threshold detection
+    if (level >= threshold) {
+      if (!isRecordingClip) {
+        startRecordingClip();
+      }
+      // Reset silence timeout
+      if (silenceTimeout) { clearTimeout(silenceTimeout); silenceTimeout = null; }
+    } else {
+      if (isRecordingClip && !silenceTimeout) {
+        silenceTimeout = setTimeout(() => {
+          stopRecordingClip(false);
+          silenceTimeout = null;
+        }, SILENCE_GRACE);
+      }
+    }
+
+    requestAnimationFrame(monitorLevel);
+  }
+
+  // ─── Start recording a clip ───
+  function startRecordingClip() {
+    if (!micStream || isRecordingClip) return;
+
+    recordingChunks = [];
+    clipStartTime = Date.now();
+
+    try {
+      mediaRecorder = new MediaRecorder(micStream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm'
+      });
+    } catch(e) {
+      mediaRecorder = new MediaRecorder(micStream);
+    }
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordingChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      const duration = Date.now() - clipStartTime;
+      if (duration < MIN_CLIP_DURATION || recordingChunks.length === 0) return;
+
+      const blob = new Blob(recordingChunks, { type: mediaRecorder.mimeType });
+      const clip = {
+        id: Date.now(),
+        blob,
+        url: URL.createObjectURL(blob),
+        time: new Date(clipStartTime),
+        duration: duration,
+        mimeType: mediaRecorder.mimeType
+      };
+      clips.unshift(clip);
+      renderClips();
+    };
+
+    mediaRecorder.start(200);
+    isRecordingClip = true;
+    statusDot.className = 'status-dot recording';
+    statusText.textContent = 'Enregistrement…';
+  }
+
+  // ─── Stop recording a clip ───
+  function stopRecordingClip(force) {
+    if (!isRecordingClip || !mediaRecorder) return;
+
+    isRecordingClip = false;
+    if (mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+
+    if (isListening && !force) {
+      statusDot.className = 'status-dot listening';
+      statusText.textContent = 'Écoute en cours…';
+    }
+  }
+
+  // ─── Render clips ───
+  function renderClips() {
+    emptyState.classList.toggle('hidden', clips.length > 0);
+    downloadAll.classList.toggle('hidden', clips.length === 0);
+    clipsCount.textContent = clips.length + ' clip' + (clips.length !== 1 ? 's' : '');
+
+    // Remove old clip cards
+    clipsList.querySelectorAll('.clip-card').forEach(c => c.remove());
+
+    clips.forEach((clip, idx) => {
+      const card = document.createElement('div');
+      card.className = 'clip-card';
+      card.dataset.id = clip.id;
+
+      const timeStr = clip.time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const durSec = (clip.duration / 1000).toFixed(1);
+
+      // Generate fake waveform bars
+      let barsHtml = '';
+      const barCount = 20;
+      for (let i = 0; i < barCount; i++) {
+        const h = 4 + Math.random() * 24;
+        barsHtml += `<div class="bar" style="height:${h}px;animation-delay:${i*0.05}s"></div>`;
+      }
+
+      card.innerHTML = `
+        <button class="clip-play-btn" data-action="play">
+          <svg viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21"/></svg>
+        </button>
+        <div class="clip-info">
+          <div class="clip-time">${timeStr}</div>
+          <div class="clip-duration">${durSec}s</div>
+        </div>
+        <div class="clip-waveform">${barsHtml}</div>
+        <button class="clip-download" data-action="download" title="Télécharger">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      `;
+
+      // Play
+      card.querySelector('[data-action="play"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlay(clip, card);
+      });
+
+      // Download
+      card.querySelector('[data-action="download"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        downloadClip(clip);
+      });
+
+      card.addEventListener('click', () => togglePlay(clip, card));
+
+      clipsList.insertBefore(card, emptyState);
+    });
+  }
+
+  // ─── Play/stop clip ───
+  function togglePlay(clip, card) {
+    // Stop any currently playing
+    if (currentlyPlaying) {
+      currentlyPlaying.audio.pause();
+      currentlyPlaying.audio.currentTime = 0;
+      const prevCard = clipsList.querySelector(`.clip-card[data-id="${currentlyPlaying.id}"]`);
+      if (prevCard) prevCard.classList.remove('playing');
+
+      if (currentlyPlaying.id === clip.id) {
+        currentlyPlaying = null;
+        return;
+      }
+    }
+
+    const audio = new Audio(clip.url);
+    card.classList.add('playing');
+    currentlyPlaying = { id: clip.id, audio };
+
+    audio.play();
+    audio.onended = () => {
+      card.classList.remove('playing');
+      currentlyPlaying = null;
+    };
+  }
+
+  // ─── Download clip ───
+  function downloadClip(clip) {
+    const ext = clip.mimeType.includes('webm') ? 'webm' : 'ogg';
+    const timeStr = clip.time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/:/g, '-');
+    const a = document.createElement('a');
+    a.href = clip.url;
+    a.download = `nightowl_${timeStr}.${ext}`;
+    a.click();
+  }
+
+  // ─── Download all ───
+  downloadAll.addEventListener('click', () => {
+    clips.forEach(clip => downloadClip(clip));
+  });
+
+  // ─── Session timer ───
+  function updateSessionTimer() {
+    if (!sessionStart) return;
+    const elapsed = Date.now() - sessionStart;
+    const h = Math.floor(elapsed / 3600000);
+    const m = Math.floor((elapsed % 3600000) / 60000);
+    const s = Math.floor((elapsed % 60000) / 1000);
+    sessionTimer.textContent =
+      String(h).padStart(2, '0') + ':' +
+      String(m).padStart(2, '0') + ':' +
+      String(s).padStart(2, '0');
+  }
+
+  // ─── Wake Lock ───
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakelockInfo.textContent = '🔒 Écran maintenu actif';
+        wakeLock.addEventListener('release', () => {
+          wakelockInfo.textContent = '';
+        });
+      } else {
+        wakelockInfo.textContent = '⚠️ Garde l\'écran allumé manuellement';
+      }
+    } catch(e) {
+      wakelockInfo.textContent = '⚠️ Garde l\'écran allumé manuellement';
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release();
+      wakeLock = null;
+    }
+    wakelockInfo.textContent = '';
+  }
+
+  // ─── Visibility change: re-acquire wake lock ───
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && isListening && !wakeLock) {
+      requestWakeLock();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
