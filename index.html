@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -30,557 +31,558 @@
     --radius-sm: 10px;
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'IBM Plex Sans', sans-serif;
-    background: var(--bg-deep);
-    color: var(--text-primary);
-    min-height: 100dvh;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* Subtle grain overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 9999;
-  }
-
-  .app {
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 0 20px 100px;
-    position: relative;
-  }
-
-  /* ─── Header ─── */
-  .header {
-    padding: 50px 0 20px;
-    text-align: center;
-    position: relative;
-  }
-
-  .header .moon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, var(--accent), #059669);
-    margin: 0 auto 16px;
-    box-shadow: 0 0 40px var(--accent-glow-strong), 0 0 80px var(--accent-glow);
-    animation: moonPulse 4s ease-in-out infinite;
-  }
-
-  @keyframes moonPulse {
-    0%, 100% { box-shadow: 0 0 40px var(--accent-glow-strong), 0 0 80px var(--accent-glow); }
-    50% { box-shadow: 0 0 50px var(--accent-glow-strong), 0 0 100px var(--accent-glow); }
-  }
-
-  .header h1 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 28px;
-    font-weight: 400;
-    letter-spacing: 0.5px;
-    color: var(--text-primary);
-  }
-
-  .header p {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 4px;
-    font-weight: 300;
-  }
-
-  /* ─── Status Bar ─── */
-  .status-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 20px 0;
-    font-size: 13px;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    transition: all 0.3s;
-  }
-
-  .status-dot.listening {
-    background: var(--warning);
-    box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
-    animation: blink 2s ease-in-out infinite;
-  }
-
-  .status-dot.recording {
-    background: var(--danger);
-    box-shadow: 0 0 12px var(--danger-glow);
-    animation: blink 0.8s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  /* ─── Level Meter ─── */
-  .meter-section {
-    margin: 16px 0 24px;
-  }
-
-  .meter-container {
-    background: var(--bg-surface);
-    border-radius: var(--radius);
-    padding: 20px;
-    border: 1px solid var(--border);
-  }
-
-  .meter-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  .meter-label span {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    font-weight: 500;
-  }
-
-  .meter-label .db-value {
-    font-size: 14px;
-    color: var(--text-secondary);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-
-  .meter-bar-track {
-    height: 6px;
-    background: var(--bg-deep);
-    border-radius: 3px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .meter-bar-fill {
-    height: 100%;
-    width: 0%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-    transition: width 0.08s linear;
-    position: relative;
-  }
-
-  .meter-bar-fill.hot {
-    background: linear-gradient(90deg, var(--warning), var(--danger));
-  }
-
-  /* Threshold marker */
-  .threshold-marker {
-    position: absolute;
-    top: -4px;
-    bottom: -4px;
-    width: 2px;
-    background: var(--accent);
-    border-radius: 1px;
-    opacity: 0.7;
-    z-index: 2;
-    transition: left 0.2s;
-  }
-
-  .threshold-marker::after {
-    content: '▼';
-    position: absolute;
-    top: -14px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 8px;
-    color: var(--accent);
-  }
-
-  /* ─── Sensitivity Slider ─── */
-  .sensitivity-section {
-    margin-top: 16px;
-  }
-
-  .sensitivity-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-
-  .sensitivity-label span {
-    font-size: 12px;
-    color: var(--text-muted);
-    letter-spacing: 0.5px;
-  }
-
-  input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 4px;
-    background: var(--bg-deep);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-  }
-
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    box-shadow: 0 0 10px var(--accent-glow);
-    transition: transform 0.15s;
-  }
-
-  input[type="range"]::-webkit-slider-thumb:active {
-    transform: scale(1.2);
-  }
-
-  /* ─── Controls ─── */
-  .controls {
-    display: flex;
-    justify-content: center;
-    margin: 28px 0;
-    gap: 16px;
-    align-items: center;
-  }
-
-  .btn-main {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 3px solid var(--accent);
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.25s;
-    position: relative;
-  }
-
-  .btn-main:hover {
-    background: var(--accent-glow);
-  }
-
-  .btn-main .icon-play {
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 12px 0 12px 22px;
-    border-color: transparent transparent transparent var(--accent);
-    margin-left: 4px;
-    transition: all 0.2s;
-  }
-
-  .btn-main.active {
-    border-color: var(--danger);
-    background: var(--danger-glow);
-    animation: pulseRec 2s ease-in-out infinite;
-  }
-
-  @keyframes pulseRec {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.3); }
-    50% { box-shadow: 0 0 0 12px rgba(248, 113, 113, 0); }
-  }
-
-  .btn-main.active .icon-play {
-    border-width: 0;
-    width: 22px;
-    height: 22px;
-    border-radius: 4px;
-    background: var(--danger);
-    margin-left: 0;
-  }
-
-  /* ─── Session Info ─── */
-  .session-info {
-    text-align: center;
-    margin-bottom: 24px;
-  }
-
-  .session-timer {
-    font-size: 36px;
-    font-weight: 300;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-primary);
-    letter-spacing: 2px;
-  }
-
-  .session-meta {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
-
-  /* ─── Clips Section ─── */
-  .clips-section {
-    margin-top: 8px;
-  }
-
-  .clips-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-    padding: 0 2px;
-  }
-
-  .clips-header h2 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    font-weight: 400;
-  }
-
-  .clips-count {
-    font-size: 12px;
-    color: var(--text-muted);
-    background: var(--bg-surface);
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
-
-  .clips-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .clip-card {
-    background: var(--bg-card);
-    border-radius: var(--radius-sm);
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border: 1px solid var(--border);
-    transition: all 0.2s;
-    cursor: pointer;
-    animation: slideIn 0.3s ease-out;
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .clip-card:hover {
-    background: var(--bg-card-hover);
-    border-color: rgba(110, 231, 183, 0.15);
-  }
-
-  .clip-card.playing {
-    border-color: var(--accent);
-    background: var(--accent-glow);
-  }
-
-  .clip-play-btn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    border-radius: 50%;
-    background: var(--accent-glow);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .clip-play-btn:hover {
-    background: var(--accent-glow-strong);
-  }
-
-  .clip-play-btn svg {
-    width: 14px;
-    height: 14px;
-    fill: var(--accent);
-  }
-
-  .clip-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .clip-time {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-
-  .clip-duration {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
-
-  .clip-waveform {
-    flex: 1;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    gap: 1.5px;
-  }
-
-  .clip-waveform .bar {
-    width: 2.5px;
-    border-radius: 1.5px;
-    background: var(--accent-dim);
-    opacity: 0.4;
-    transition: opacity 0.2s;
-  }
-
-  .clip-card.playing .clip-waveform .bar {
-    opacity: 0.8;
-    animation: waveAnim 0.6s ease-in-out infinite alternate;
-  }
-
-  @keyframes waveAnim {
-    from { opacity: 0.4; }
-    to { opacity: 1; }
-  }
-
-  .clip-download {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: transparent;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .clip-download:hover {
-    background: var(--bg-surface);
-    border-color: var(--text-muted);
-  }
-
-  .clip-download svg {
-    width: 14px;
-    height: 14px;
-    stroke: var(--text-muted);
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  /* ─── Empty State ─── */
-  .empty-state {
-    text-align: center;
-    padding: 48px 20px;
-    color: var(--text-muted);
-  }
-
-  .empty-state .owl-icon {
-    font-size: 40px;
-    margin-bottom: 12px;
-    opacity: 0.5;
-  }
-
-  .empty-state p {
-    font-size: 13px;
-    line-height: 1.6;
-  }
-
-  /* ─── Download All ─── */
-  .download-all {
-    margin-top: 16px;
-    width: 100%;
-    padding: 14px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .download-all:hover {
-    background: var(--bg-card);
-    color: var(--text-primary);
-    border-color: var(--accent-dim);
-  }
-
-  .download-all svg {
-    width: 16px;
-    height: 16px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  /* ─── Hidden ─── */
-  .hidden { display: none !important; }
-
-  /* ─── Wakelock info ─── */
-  .wakelock-info {
-    text-align: center;
-    margin-top: 12px;
-    font-size: 11px;
-    color: var(--text-muted);
-    opacity: 0.6;
-  }
-
-  /* ─── Stars background ─── */
-  .stars {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  .star {
-    position: absolute;
-    width: 2px;
-    height: 2px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.3);
-    animation: twinkle var(--dur) ease-in-out infinite;
-  }
-
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.1; }
-    50% { opacity: 0.6; }
-  }
-
-  .app { position: relative; z-index: 1; }
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+font-family: ‘IBM Plex Sans’, sans-serif;
+background: var(–bg-deep);
+color: var(–text-primary);
+min-height: 100dvh;
+overflow-x: hidden;
+-webkit-font-smoothing: antialiased;
+}
+
+/* Subtle grain overlay */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+opacity: 0.03;
+background-image: url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 256 256’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘n’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘4’ stitchTiles=‘stitch’/%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23n)’/%3E%3C/svg%3E”);
+pointer-events: none;
+z-index: 9999;
+}
+
+.app {
+max-width: 480px;
+margin: 0 auto;
+padding: 0 20px 100px;
+position: relative;
+}
+
+/* ─── Header ─── */
+.header {
+padding: 50px 0 20px;
+text-align: center;
+position: relative;
+}
+
+.header .moon {
+width: 48px;
+height: 48px;
+border-radius: 50%;
+background: radial-gradient(circle at 35% 35%, var(–accent), #059669);
+margin: 0 auto 16px;
+box-shadow: 0 0 40px var(–accent-glow-strong), 0 0 80px var(–accent-glow);
+animation: moonPulse 4s ease-in-out infinite;
+}
+
+@keyframes moonPulse {
+0%, 100% { box-shadow: 0 0 40px var(–accent-glow-strong), 0 0 80px var(–accent-glow); }
+50% { box-shadow: 0 0 50px var(–accent-glow-strong), 0 0 100px var(–accent-glow); }
+}
+
+.header h1 {
+font-family: ‘DM Serif Display’, serif;
+font-size: 28px;
+font-weight: 400;
+letter-spacing: 0.5px;
+color: var(–text-primary);
+}
+
+.header p {
+font-size: 13px;
+color: var(–text-muted);
+margin-top: 4px;
+font-weight: 300;
+}
+
+/* ─── Status Bar ─── */
+.status-bar {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+margin: 20px 0;
+font-size: 13px;
+color: var(–text-secondary);
+font-weight: 500;
+}
+
+.status-dot {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+background: var(–text-muted);
+transition: all 0.3s;
+}
+
+.status-dot.listening {
+background: var(–warning);
+box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+animation: blink 2s ease-in-out infinite;
+}
+
+.status-dot.recording {
+background: var(–danger);
+box-shadow: 0 0 12px var(–danger-glow);
+animation: blink 0.8s ease-in-out infinite;
+}
+
+@keyframes blink {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.4; }
+}
+
+/* ─── Level Meter ─── */
+.meter-section {
+margin: 16px 0 24px;
+}
+
+.meter-container {
+background: var(–bg-surface);
+border-radius: var(–radius);
+padding: 20px;
+border: 1px solid var(–border);
+}
+
+.meter-label {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 12px;
+}
+
+.meter-label span {
+font-size: 12px;
+color: var(–text-muted);
+text-transform: uppercase;
+letter-spacing: 1.5px;
+font-weight: 500;
+}
+
+.meter-label .db-value {
+font-size: 14px;
+color: var(–text-secondary);
+font-variant-numeric: tabular-nums;
+letter-spacing: 0;
+text-transform: none;
+}
+
+.meter-bar-track {
+height: 6px;
+background: var(–bg-deep);
+border-radius: 3px;
+overflow: hidden;
+position: relative;
+}
+
+.meter-bar-fill {
+height: 100%;
+width: 0%;
+border-radius: 3px;
+background: linear-gradient(90deg, var(–accent-dim), var(–accent));
+transition: width 0.08s linear;
+position: relative;
+}
+
+.meter-bar-fill.hot {
+background: linear-gradient(90deg, var(–warning), var(–danger));
+}
+
+/* Threshold marker */
+.threshold-marker {
+position: absolute;
+top: -4px;
+bottom: -4px;
+width: 2px;
+background: var(–accent);
+border-radius: 1px;
+opacity: 0.7;
+z-index: 2;
+transition: left 0.2s;
+}
+
+.threshold-marker::after {
+content: ‘▼’;
+position: absolute;
+top: -14px;
+left: 50%;
+transform: translateX(-50%);
+font-size: 8px;
+color: var(–accent);
+}
+
+/* ─── Sensitivity Slider ─── */
+.sensitivity-section {
+margin-top: 16px;
+}
+
+.sensitivity-label {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 8px;
+}
+
+.sensitivity-label span {
+font-size: 12px;
+color: var(–text-muted);
+letter-spacing: 0.5px;
+}
+
+input[type=“range”] {
+-webkit-appearance: none;
+appearance: none;
+width: 100%;
+height: 4px;
+background: var(–bg-deep);
+border-radius: 2px;
+outline: none;
+cursor: pointer;
+}
+
+input[type=“range”]::-webkit-slider-thumb {
+-webkit-appearance: none;
+appearance: none;
+width: 20px;
+height: 20px;
+border-radius: 50%;
+background: var(–accent);
+cursor: pointer;
+box-shadow: 0 0 10px var(–accent-glow);
+transition: transform 0.15s;
+}
+
+input[type=“range”]::-webkit-slider-thumb:active {
+transform: scale(1.2);
+}
+
+/* ─── Controls ─── */
+.controls {
+display: flex;
+justify-content: center;
+margin: 28px 0;
+gap: 16px;
+align-items: center;
+}
+
+.btn-main {
+width: 80px;
+height: 80px;
+border-radius: 50%;
+border: 3px solid var(–accent);
+background: transparent;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.25s;
+position: relative;
+}
+
+.btn-main:hover {
+background: var(–accent-glow);
+}
+
+.btn-main .icon-play {
+width: 0;
+height: 0;
+border-style: solid;
+border-width: 12px 0 12px 22px;
+border-color: transparent transparent transparent var(–accent);
+margin-left: 4px;
+transition: all 0.2s;
+}
+
+.btn-main.active {
+border-color: var(–danger);
+background: var(–danger-glow);
+animation: pulseRec 2s ease-in-out infinite;
+}
+
+@keyframes pulseRec {
+0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.3); }
+50% { box-shadow: 0 0 0 12px rgba(248, 113, 113, 0); }
+}
+
+.btn-main.active .icon-play {
+border-width: 0;
+width: 22px;
+height: 22px;
+border-radius: 4px;
+background: var(–danger);
+margin-left: 0;
+}
+
+/* ─── Session Info ─── */
+.session-info {
+text-align: center;
+margin-bottom: 24px;
+}
+
+.session-timer {
+font-size: 36px;
+font-weight: 300;
+font-variant-numeric: tabular-nums;
+color: var(–text-primary);
+letter-spacing: 2px;
+}
+
+.session-meta {
+font-size: 12px;
+color: var(–text-muted);
+margin-top: 4px;
+}
+
+/* ─── Clips Section ─── */
+.clips-section {
+margin-top: 8px;
+}
+
+.clips-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 14px;
+padding: 0 2px;
+}
+
+.clips-header h2 {
+font-family: ‘DM Serif Display’, serif;
+font-size: 18px;
+font-weight: 400;
+}
+
+.clips-count {
+font-size: 12px;
+color: var(–text-muted);
+background: var(–bg-surface);
+padding: 4px 10px;
+border-radius: 20px;
+}
+
+.clips-list {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.clip-card {
+background: var(–bg-card);
+border-radius: var(–radius-sm);
+padding: 14px 16px;
+display: flex;
+align-items: center;
+gap: 12px;
+border: 1px solid var(–border);
+transition: all 0.2s;
+cursor: pointer;
+animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+from { opacity: 0; transform: translateY(8px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+.clip-card:hover {
+background: var(–bg-card-hover);
+border-color: rgba(110, 231, 183, 0.15);
+}
+
+.clip-card.playing {
+border-color: var(–accent);
+background: var(–accent-glow);
+}
+
+.clip-play-btn {
+width: 36px;
+height: 36px;
+min-width: 36px;
+border-radius: 50%;
+background: var(–accent-glow);
+border: none;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s;
+}
+
+.clip-play-btn:hover {
+background: var(–accent-glow-strong);
+}
+
+.clip-play-btn svg {
+width: 14px;
+height: 14px;
+fill: var(–accent);
+}
+
+.clip-info {
+flex: 1;
+min-width: 0;
+}
+
+.clip-time {
+font-size: 14px;
+font-weight: 500;
+color: var(–text-primary);
+}
+
+.clip-duration {
+font-size: 12px;
+color: var(–text-muted);
+margin-top: 2px;
+}
+
+.clip-waveform {
+flex: 1;
+height: 32px;
+display: flex;
+align-items: center;
+gap: 1.5px;
+}
+
+.clip-waveform .bar {
+width: 2.5px;
+border-radius: 1.5px;
+background: var(–accent-dim);
+opacity: 0.4;
+transition: opacity 0.2s;
+}
+
+.clip-card.playing .clip-waveform .bar {
+opacity: 0.8;
+animation: waveAnim 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes waveAnim {
+from { opacity: 0.4; }
+to { opacity: 1; }
+}
+
+.clip-download {
+width: 32px;
+height: 32px;
+border-radius: 8px;
+background: transparent;
+border: 1px solid var(–border);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s;
+}
+
+.clip-download:hover {
+background: var(–bg-surface);
+border-color: var(–text-muted);
+}
+
+.clip-download svg {
+width: 14px;
+height: 14px;
+stroke: var(–text-muted);
+fill: none;
+stroke-width: 2;
+stroke-linecap: round;
+stroke-linejoin: round;
+}
+
+/* ─── Empty State ─── */
+.empty-state {
+text-align: center;
+padding: 48px 20px;
+color: var(–text-muted);
+}
+
+.empty-state .owl-icon {
+font-size: 40px;
+margin-bottom: 12px;
+opacity: 0.5;
+}
+
+.empty-state p {
+font-size: 13px;
+line-height: 1.6;
+}
+
+/* ─── Download All ─── */
+.download-all {
+margin-top: 16px;
+width: 100%;
+padding: 14px;
+background: var(–bg-surface);
+border: 1px solid var(–border);
+border-radius: var(–radius-sm);
+color: var(–text-secondary);
+font-family: ‘IBM Plex Sans’, sans-serif;
+font-size: 13px;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+}
+
+.download-all:hover {
+background: var(–bg-card);
+color: var(–text-primary);
+border-color: var(–accent-dim);
+}
+
+.download-all svg {
+width: 16px;
+height: 16px;
+stroke: currentColor;
+fill: none;
+stroke-width: 2;
+stroke-linecap: round;
+stroke-linejoin: round;
+}
+
+/* ─── Hidden ─── */
+.hidden { display: none !important; }
+
+/* ─── Wakelock info ─── */
+.wakelock-info {
+text-align: center;
+margin-top: 12px;
+font-size: 11px;
+color: var(–text-muted);
+opacity: 0.6;
+}
+
+/* ─── Stars background ─── */
+.stars {
+position: fixed;
+inset: 0;
+pointer-events: none;
+z-index: 0;
+overflow: hidden;
+}
+
+.star {
+position: absolute;
+width: 2px;
+height: 2px;
+border-radius: 50%;
+background: rgba(255,255,255,0.3);
+animation: twinkle var(–dur) ease-in-out infinite;
+}
+
+@keyframes twinkle {
+0%, 100% { opacity: 0.1; }
+50% { opacity: 0.6; }
+}
+
+.app { position: relative; z-index: 1; }
 </style>
+
 </head>
 <body>
 
@@ -720,7 +722,11 @@
   async function startListening() {
     try {
       micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: true
+        }
       });
     } catch(e) {
       alert("Impossible d'accéder au micro. Vérifie les permissions.");
@@ -729,10 +735,17 @@
 
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioCtx.createMediaStreamSource(micStream);
+
+    // Gain amplifier to boost sensitivity
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = 8;
+
     analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.3;
-    source.connect(analyser);
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.2;
+
+    source.connect(gainNode);
+    gainNode.connect(analyser);
 
     isListening = true;
     sessionStart = Date.now();
@@ -784,17 +797,24 @@
       sum += v * v;
     }
     const rms = Math.sqrt(sum / data.length);
-    // Logarithmic scaling: maps -70dB..0dB to 0..100 for much better sensitivity
+    // Peak detection: get the max sample in the buffer
+    let peak = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = Math.abs((data[i] - 128) / 128);
+      if (v > peak) peak = v;
+    }
+    // Use the louder of RMS or peak with aggressive scaling
+    // rms*2000 makes very quiet sounds visible on the meter
+    const level = Math.min(100, Math.max(rms * 2000, peak * 500));
     const dbRaw = rms > 0 ? 20 * Math.log10(rms) : -100;
-    const level = Math.min(100, Math.max(0, ((dbRaw + 70) / 70) * 100));
-    const db = dbRaw > -70 ? dbRaw : -70;
+    const db = dbRaw > -80 ? dbRaw : -80;
 
     const threshold = parseInt(thresholdSlider.value);
 
     // Update meter
     meterFill.style.width = level + '%';
     meterFill.className = 'meter-bar-fill' + (level > 70 ? ' hot' : '');
-    dbValue.textContent = (db > -70 ? db.toFixed(0) : '—') + ' dB';
+    dbValue.textContent = (db > -80 ? db.toFixed(0) : '—') + ' dB';
 
     // Threshold detection
     if (level >= threshold) {
@@ -1019,5 +1039,6 @@
 
 })();
 </script>
+
 </body>
 </html>
