@@ -644,8 +644,8 @@ animation: twinkle var(–dur) ease-in-out infinite;
       </div>
     </div>
     <button class="download-all hidden" id="downloadAll">
-      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Tout télécharger
+      <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      Exporter tous les clips
     </button>
   </div>
 
@@ -940,10 +940,10 @@ animation: twinkle var(–dur) ease-in-out infinite;
         togglePlay(clip, card);
       });
 
-      // Download
+      // Download / Share
       card.querySelector('[data-action="download"]').addEventListener('click', (e) => {
         e.stopPropagation();
-        downloadClip(clip);
+        shareClip(clip);
       });
 
       card.addEventListener('click', () => togglePlay(clip, card));
@@ -980,17 +980,68 @@ animation: twinkle var(–dur) ease-in-out infinite;
 
   // ─── Download clip ───
   function downloadClip(clip) {
-    const ext = clip.mimeType.includes('webm') ? 'webm' : 'ogg';
+    const ext = clip.mimeType.includes('webm') ? 'webm' : 'mp4';
     const timeStr = clip.time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/:/g, '-');
+    const fileName = `nightowl_${timeStr}.${ext}`;
+
+    // iOS Safari doesn't support a.click() download well
+    // Try download first, fallback to open in new tab
     const a = document.createElement('a');
     a.href = clip.url;
-    a.download = `nightowl_${timeStr}.${ext}`;
+    a.download = fileName;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+
+    // Also try share API on mobile as fallback
+    if (navigator.share && navigator.canShare) {
+      const file = new File([clip.blob], fileName, { type: clip.mimeType });
+      if (navigator.canShare({ files: [file] })) {
+        // Don't auto-share, just let the download attempt work
+      }
+    }
   }
 
-  // ─── Download all ───
-  downloadAll.addEventListener('click', () => {
-    clips.forEach(clip => downloadClip(clip));
+  // Share single clip (for iOS)
+  async function shareClip(clip) {
+    const ext = clip.mimeType.includes('webm') ? 'webm' : 'mp4';
+    const timeStr = clip.time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/:/g, '-');
+    const fileName = `nightowl_${timeStr}.${ext}`;
+    const file = new File([clip.blob], fileName, { type: clip.mimeType });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'NightOwl clip' });
+      } catch(e) { /* cancelled */ }
+    } else {
+      // Fallback: open blob in new tab
+      window.open(clip.url, '_blank');
+    }
+  }
+
+  // Download all — share sequentially on iOS or download on desktop
+  downloadAll.addEventListener('click', async () => {
+    if (clips.length === 0) return;
+
+    // On mobile, use share API for all clips merged
+    if (navigator.share && navigator.canShare) {
+      const files = clips.map((clip, i) => {
+        const ext = clip.mimeType.includes('webm') ? 'webm' : 'mp4';
+        const timeStr = clip.time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/:/g, '-');
+        return new File([clip.blob], `nightowl_${timeStr}.${ext}`, { type: clip.mimeType });
+      });
+      if (navigator.canShare({ files })) {
+        try {
+          await navigator.share({ files, title: 'NightOwl — Clips de la nuit' });
+          return;
+        } catch(e) { /* cancelled or failed, fallback below */ }
+      }
+    }
+
+    // Desktop fallback: download each
+    clips.forEach((clip, i) => {
+      setTimeout(() => downloadClip(clip), i * 500);
+    });
   });
 
   // ─── Session timer ───
